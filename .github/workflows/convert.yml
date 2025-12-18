@@ -2,12 +2,15 @@ name: Convert Rules
 on:
   push:
     paths:
-      - 'src/**.list' # 只有改动了 src 里的 list 文件才触发
-  workflow_dispatch: # 允许手动点按钮触发
+      - 'src/**.list'
+  workflow_dispatch:
 
 jobs:
   convert:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -15,53 +18,58 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.22'
 
       - name: Install sing-box
+        # ⚠️ 这里使用了最新的编译标签，去掉了过时的 with_ech 和 with_reality_server
         run: |
           go install -v -tags with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@latest
-        
-      - name: Convert List to JSON
+
+      - name: Convert List to JSON and SRS
         run: |
-          # 创建输出目录
           mkdir -p rule_json
           mkdir -p rule_srs
 
-          # 定义转换函数 (Python 一行流太乱，用简单的 Shell 处理)
+          # 定义转换函数
           convert_file() {
             local input_file="$1"
+            # 如果文件不存在（比如通配符没匹配到），直接返回
+            if [ ! -f "$input_file" ]; then return; fi
+            
             local filename=$(basename "$input_file" .list)
             local output_json="rule_json/${filename}.json"
             local output_srs="rule_srs/${filename}.srs"
             
             echo "Converting $filename..."
             
-            # 开始构建 JSON 头
+            # 1. 构建 JSON 头部
             echo '{"version": 1, "rules": [{' > "$output_json"
             
-            # 提取 DOMAIN-SUFFIX -> domain_suffix
+            # 2. 处理 DOMAIN-SUFFIX
             echo '"domain_suffix": [' >> "$output_json"
+            # 使用 || true 防止 grep 找不到时报错退出 (Exit code 1)
             grep "DOMAIN-SUFFIX" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
             echo '],' >> "$output_json"
 
-            # 提取 DOMAIN-KEYWORD -> domain_keyword
+            # 3. 处理 DOMAIN-KEYWORD
             echo '"domain_keyword": [' >> "$output_json"
             grep "DOMAIN-KEYWORD" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
             echo '],' >> "$output_json"
 
-             # 提取 IP-CIDR -> ip_cidr
+            # 4. 处理 IP-CIDR
             echo '"ip_cidr": [' >> "$output_json"
             grep "IP-CIDR" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
             echo ']' >> "$output_json"
 
-            # 封尾
+            # 5. 封尾
             echo '}]}' >> "$output_json"
 
-            # 编译成 SRS (二进制，体积更小，手机加载更快)
+            # 6. 编译成 SRS
+            # 这里使用了完整的 GOPATH 路径调用 sing-box
             $(go env GOPATH)/bin/sing-box rule-set compile "$output_json" -o "$output_srs"
           }
 
-          # 批量处理 src 目录下的所有 list 文件
+          # 循环处理所有 list 文件
           for file in src/*.list; do
             convert_file "$file"
           done
@@ -70,8 +78,9 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          # 强制添加到暂存区
           git add rule_json/*.json rule_srs/*.srs
-          # 如果有变动才提交
+          # 提交（如果无变化则跳过）
           git diff-index --quiet HEAD || git commit -m "Auto convert rules [skip ci]"
-          # 关键修改：明确推送到 main 分支
+          # 推送到 main 分支
           git push origin HEAD:main

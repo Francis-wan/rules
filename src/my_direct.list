@@ -1,0 +1,18 @@
+# ==========================================
+# 你的个性化 Gist - 仅限强制直连 (DIRECT)
+# 警告：不要在这里填任何需要翻墙的网站！
+# ==========================================
+
+# 1. 你的 VPS 域名 (防死循环，必须保留)
+DOMAIN-SUFFIX,v.229719.xyz
+# 2. 基础设施 (防止订阅更新失败)
+DOMAIN-SUFFIX,vercel.app
+# 3. 局域网网段 (包含内网、光猫、Docker等)
+# 写了 /16 就包含了 /24，所以 192.168.1.0 那行其实可以删掉，留着 0.0 即可
+IP-CIDR,192.168.0.0/16
+# 4. 必须直连的国内/大流量服务
+DOMAIN-SUFFIX,apple.com.cn
+DOMAIN-SUFFIX,microsoft.com
+# 如果你发现 windows 更新走了代理，可以在这里加 windowsupdate.com
+# 5. 补充：其他你想强制直连的网站
+# DOMAIN-SUFFIX, example-cn.com

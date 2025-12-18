@@ -17,8 +17,8 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Install sing-box (用于编译 srs)
-       run: |
+      - name: Install sing-box
+        run: |
           go install -v -tags with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@latest
         
       - name: Convert List to JSON

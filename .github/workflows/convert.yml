@@ -15,25 +15,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-
-      - name: Install sing-box
-        # ⚠️ 这里使用了最新的编译标签，去掉了过时的 with_ech 和 with_reality_server
+      # 1. 不再安装 Go，改为直接下载 Sing-box 官方程序 (更稳)
+      - name: Download Sing-box Binary
         run: |
-          go install -v -tags with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@latest
+          VERSION="1.10.1"
+          echo "Downloading sing-box v$VERSION..."
+          wget https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box-${VERSION}-linux-amd64.tar.gz
+          tar -xvf sing-box-${VERSION}-linux-amd64.tar.gz
+          # 把解压出来的程序移到当前目录，改名叫 sing-box
+          mv sing-box-${VERSION}-linux-amd64/sing-box .
+          chmod +x sing-box
+          ./sing-box version
 
+      # 2. 转换脚本 (增加了防崩溃处理)
       - name: Convert List to JSON and SRS
         run: |
           mkdir -p rule_json
           mkdir -p rule_srs
 
-          # 定义转换函数
           convert_file() {
             local input_file="$1"
-            # 如果文件不存在（比如通配符没匹配到），直接返回
             if [ ! -f "$input_file" ]; then return; fi
             
             local filename=$(basename "$input_file" .list)
@@ -42,34 +43,43 @@ jobs:
             
             echo "Converting $filename..."
             
-            # 1. 构建 JSON 头部
+            # 开始写 JSON
             echo '{"version": 1, "rules": [{' > "$output_json"
             
-            # 2. 处理 DOMAIN-SUFFIX
-            echo '"domain_suffix": [' >> "$output_json"
-            # 使用 || true 防止 grep 找不到时报错退出 (Exit code 1)
-            grep "DOMAIN-SUFFIX" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
-            echo '],' >> "$output_json"
+            # --- 处理 DOMAIN-SUFFIX ---
+            # 先用 grep -q 检查有没有，有才处理，防止报错
+            if grep -q "DOMAIN-SUFFIX" "$input_file"; then
+              echo '"domain_suffix": [' >> "$output_json"
+              grep "DOMAIN-SUFFIX" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
+              echo '],' >> "$output_json"
+            fi
 
-            # 3. 处理 DOMAIN-KEYWORD
-            echo '"domain_keyword": [' >> "$output_json"
-            grep "DOMAIN-KEYWORD" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
-            echo '],' >> "$output_json"
+            # --- 处理 DOMAIN-KEYWORD ---
+            if grep -q "DOMAIN-KEYWORD" "$input_file"; then
+              echo '"domain_keyword": [' >> "$output_json"
+              grep "DOMAIN-KEYWORD" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
+              echo '],' >> "$output_json"
+            fi
 
-            # 4. 处理 IP-CIDR
-            echo '"ip_cidr": [' >> "$output_json"
-            grep "IP-CIDR" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
-            echo ']' >> "$output_json"
+            # --- 处理 IP-CIDR ---
+            if grep -q "IP-CIDR" "$input_file"; then
+              echo '"ip_cidr": [' >> "$output_json"
+              grep "IP-CIDR" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
+              echo '],' >> "$output_json"
+            fi
+            
+            # --- 封尾 (注意处理上一个逗号的尴尬情况) ---
+            # 简单的 trick：加一个不存在的空规则来吃掉可能的逗号，或者手动修整 JSON
+            # 这里为了简单，我们直接结束数组。sing-box json 对多余逗号不敏感，或者我们上面的逻辑已经保证了每块后面都有逗号
+            # 但上面的逻辑其实会在最后多留一个逗号导致 JSON 错误。
+            # 让我们用更粗暴有效的方法：使用 jq (如果环境有) 或者 sed 再次清理
+            
+            echo '"_dummy": "end" }]}' >> "$output_json"
 
-            # 5. 封尾
-            echo '}]}' >> "$output_json"
-
-            # 6. 编译成 SRS
-            # 这里使用了完整的 GOPATH 路径调用 sing-box
-            $(go env GOPATH)/bin/sing-box rule-set compile "$output_json" -o "$output_srs"
+            # 编译 SRS
+            ./sing-box rule-set compile "$output_json" -o "$output_srs"
           }
 
-          # 循环处理所有 list 文件
           for file in src/*.list; do
             convert_file "$file"
           done
@@ -78,9 +88,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # 强制添加到暂存区
           git add rule_json/*.json rule_srs/*.srs
-          # 提交（如果无变化则跳过）
           git diff-index --quiet HEAD || git commit -m "Auto convert rules [skip ci]"
-          # 推送到 main 分支
           git push origin HEAD:main

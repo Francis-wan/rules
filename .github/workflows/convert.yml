@@ -1,0 +1,76 @@
+name: Convert Rules
+on:
+  push:
+    paths:
+      - 'src/**.list' # 只有改动了 src 里的 list 文件才触发
+  workflow_dispatch: # 允许手动点按钮触发
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install sing-box (用于编译 srs)
+        run: |
+          go install -v -tags with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_reality_server,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@latest
+
+      - name: Convert List to JSON
+        run: |
+          # 创建输出目录
+          mkdir -p rule_json
+          mkdir -p rule_srs
+
+          # 定义转换函数 (Python 一行流太乱，用简单的 Shell 处理)
+          convert_file() {
+            local input_file="$1"
+            local filename=$(basename "$input_file" .list)
+            local output_json="rule_json/${filename}.json"
+            local output_srs="rule_srs/${filename}.srs"
+            
+            echo "Converting $filename..."
+            
+            # 开始构建 JSON 头
+            echo '{"version": 1, "rules": [{' > "$output_json"
+            
+            # 提取 DOMAIN-SUFFIX -> domain_suffix
+            echo '"domain_suffix": [' >> "$output_json"
+            grep "DOMAIN-SUFFIX" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
+            echo '],' >> "$output_json"
+
+            # 提取 DOMAIN-KEYWORD -> domain_keyword
+            echo '"domain_keyword": [' >> "$output_json"
+            grep "DOMAIN-KEYWORD" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
+            echo '],' >> "$output_json"
+
+             # 提取 IP-CIDR -> ip_cidr
+            echo '"ip_cidr": [' >> "$output_json"
+            grep "IP-CIDR" "$input_file" | awk -F, '{print "\""$2"\","}' | sed '$s/,$//' >> "$output_json"
+            echo ']' >> "$output_json"
+
+            # 封尾
+            echo '}]}' >> "$output_json"
+
+            # 编译成 SRS (二进制，体积更小，手机加载更快)
+            $(go env GOPATH)/bin/sing-box rule-set compile "$output_json" -o "$output_srs"
+          }
+
+          # 批量处理 src 目录下的所有 list 文件
+          for file in src/*.list; do
+            convert_file "$file"
+          done
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add rule_json/*.json rule_srs/*.srs
+          # 如果有变动才提交，防止空提交报错
+          git diff-index --quiet HEAD || git commit -m "Auto convert rules [skip ci]"
+          git push

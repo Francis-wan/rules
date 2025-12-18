@@ -71,6 +71,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add rule_json/*.json rule_srs/*.srs
-          # 如果有变动才提交，防止空提交报错
+          # 如果有变动才提交
           git diff-index --quiet HEAD || git commit -m "Auto convert rules [skip ci]"
-          git push
+          # 关键修改：明确推送到 main 分支
+          git push origin HEAD:main

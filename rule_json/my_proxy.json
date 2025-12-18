@@ -3,7 +3,10 @@
   "rules": [
     {
       "domain_suffix": [
-        "speedtest.net",
+        "fast.com",
+        "ooklaserver.net",
+        "speed.cloudflare.com",
+        "speed.dler.io",
         "fengkongcloud.com",
         "xhscdn.com",
         "xhscdn.net",
@@ -76,6 +79,7 @@
         "linux.do"
       ],
       "domain_keyword": [
+        "speedtest",
         "github",
         "openai"
       ],

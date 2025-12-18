@@ -1,14 +1,16 @@
-{"version": 1, "rules": [{
-"domain_suffix": [
-"v.229719.xyz",
-"vercel.app",
-"apple.com.cn",
-"microsoft.com",
-" example-cn.com"
-],
-"domain_keyword": [
-],
-"ip_cidr": [
-"192.168.0.0/16"
-]
-}]}
+{
+  "version": 1,
+  "rules": [
+    {
+      "domain_suffix": [
+        "v.229719.xyz",
+        "vercel.app",
+        "apple.com.cn",
+        "microsoft.com"
+      ],
+      "ip_cidr": [
+        "192.168.0.0/16"
+      ]
+    }
+  ]
+}

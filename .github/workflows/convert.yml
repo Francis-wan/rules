@@ -19,12 +19,10 @@ jobs:
 
       - name: Download Sing-box Binary
         run: |
-          # 升级到一个较新的稳定版，兼容性更好
           VERSION="1.11.4"
           echo "Downloading sing-box v$VERSION..."
           wget https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box-${VERSION}-linux-amd64.tar.gz
           tar -xvf sing-box-${VERSION}-linux-amd64.tar.gz
-          # 移动并重命名，确保路径简单
           mv sing-box-${VERSION}-linux-amd64/sing-box .
           chmod +x sing-box
           ./sing-box version
@@ -58,7 +56,7 @@ jobs:
               
               rules = []
               try:
-                  # ✅ 关键修改：使用 utf-8-sig 自动去除 BOM 头，防止乱码报错
+                  # 使用 utf-8-sig 去除 BOM 头
                   with open(list_file, 'r', encoding='utf-8-sig') as f:
                       for line in f:
                           line = line.strip()
@@ -66,15 +64,22 @@ jobs:
                           parts = line.split(',')
                           if len(parts) < 2: continue
                           
-                          # 兼容处理：把 DOMAIN-SUFFIX 转为 domain_suffix
-                          r_type = parts[0].upper().replace('-', '_').lower()
+                          # 获取类型和值
+                          r_type = parts[0].upper().strip()
                           r_val = parts[1].strip()
                           
-                          # 只保留 domain 和 ip 相关的规则
-                          if 'domain' in r_type:
-                              rules.append({r_type: r_val})
-                          elif 'ip' in r_type:
-                              rules.append({r_type: r_val})
+                          # --- 核心修复：手动映射类型，防止出现 ip_cidr6 ---
+                          if r_type == 'DOMAIN-SUFFIX':
+                              rules.append({'domain_suffix': r_val})
+                          elif r_type == 'DOMAIN-KEYWORD':
+                              rules.append({'domain_keyword': r_val})
+                          elif r_type == 'DOMAIN':
+                              rules.append({'domain': r_val})
+                          elif r_type == 'IP-CIDR' or r_type == 'IP-CIDR6':
+                              # ✅ 重点：IPv6 也要放进 ip_cidr 字段里！
+                              rules.append({'ip_cidr': r_val})
+                          elif r_type == 'IP-ASN':
+                              rules.append({'ip_asn': r_val})
                               
               except Exception as e:
                   print(f'❌ Read Error: {e}')
@@ -85,7 +90,7 @@ jobs:
                   print(f'⚠️ Skipping {filename}: No valid rules found.')
                   continue
 
-              # 合并规则生成 JSON
+              # 合并规则
               final_rule = {}
               for r in rules:
                   for k, v in r.items():
@@ -103,7 +108,6 @@ jobs:
               # 编译 SRS
               srs_path = f'rule_srs/{filename}.srs'
               try:
-                  # ✅ 关键修改：捕获详细报错信息 (stderr)
                   result = subprocess.run(
                       ['./sing-box', 'rule-set', 'compile', json_path, '-o', srs_path],
                       check=True, capture_output=True, text=True
@@ -111,12 +115,12 @@ jobs:
                   print(f'✅ SRS Compiled: {srs_path}')
               except subprocess.CalledProcessError as e:
                   print(f'❌ Compilation Failed for {filename}!')
-                  print(f'👉 Error Message: {e.stderr}') # 打印具体原因
+                  print(f'👉 Error Message: {e.stderr}')
                   has_error = True
 
           if has_error:
-              print('❌ Some files failed to process. Check logs above.')
-              # 哪怕有错，也尽量提交成功的那些文件，方便你调试
+              print('❌ Some files failed to process.')
+              sys.exit(1) # 报错退出，让你在 Actions 页面能看到红叉
           else:
               print('🎉 All files processed successfully.')
           "
@@ -132,5 +136,4 @@ jobs:
           else
             git commit -m "Auto update rules [skip ci]"
             git push
-            echo "🎉 Pushed changes to GitHub."
           fi

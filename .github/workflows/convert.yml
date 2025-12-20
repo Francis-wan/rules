@@ -1,37 +1,34 @@
 name: Convert Rules
 
-# 👇 触发机制修正：保证改什么都能跑
 on:
   push:
-    branches:
-      - main
     paths:
-      - 'src/**.list'          # 监听源文件修改
-      - '.github/workflows/**'  # 监听脚本本身修改
-  workflow_dispatch:            # ✅ 增加手动触发按钮 (救命用)
+      - 'src/**.list'
+      - '.github/workflows/**'
+  workflow_dispatch:
 
 jobs:
   convert:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # ✅ 必须有写入权限，否则无法提交生成的文件
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. 下载 Sing-box 核心 (编译器)
       - name: Download Sing-box Binary
         run: |
-          VERSION="1.10.1"
+          # 升级到一个较新的稳定版，兼容性更好
+          VERSION="1.11.4"
           echo "Downloading sing-box v$VERSION..."
           wget https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box-${VERSION}-linux-amd64.tar.gz
           tar -xvf sing-box-${VERSION}-linux-amd64.tar.gz
+          # 移动并重命名，确保路径简单
           mv sing-box-${VERSION}-linux-amd64/sing-box .
           chmod +x sing-box
           ./sing-box version
 
-      # 2. 核心逻辑：Python 同时生成 JSON 和 SRS
       - name: Run Conversion Script
         uses: actions/setup-python@v5
         with:
@@ -40,47 +37,55 @@ jobs:
       - name: Execute Python Script
         run: |
           python -c "
-          import glob, json, os, subprocess
+          import glob, json, os, subprocess, sys
 
-          # 准备文件夹
           os.makedirs('rule_json', exist_ok=True)
           os.makedirs('rule_srs', exist_ok=True)
 
-          # 遍历 src 下的所有 .list 文件
-          for list_file in glob.glob('src/*.list'):
+          files = glob.glob('src/*.list')
+          if not files:
+              print('⚠️ Warning: No .list files found in src/ folder!')
+              sys.exit(0)
+
+          print(f'Found {len(files)} list files. Processing...')
+          
+          has_error = False
+
+          for list_file in files:
               filename = os.path.basename(list_file).replace('.list', '')
+              print(f'--------------------------------------')
               print(f'Processing {filename}...')
               
               rules = []
-              # 读取 List 文件
               try:
-                  with open(list_file, 'r', encoding='utf-8') as f:
+                  # ✅ 关键修改：使用 utf-8-sig 自动去除 BOM 头，防止乱码报错
+                  with open(list_file, 'r', encoding='utf-8-sig') as f:
                       for line in f:
                           line = line.strip()
                           if not line or line.startswith('#'): continue
                           parts = line.split(',')
                           if len(parts) < 2: continue
                           
-                          # 兼容 DOMAIN-SUFFIX, IP-CIDR 等写法
+                          # 兼容处理：把 DOMAIN-SUFFIX 转为 domain_suffix
                           r_type = parts[0].upper().replace('-', '_').lower()
                           r_val = parts[1].strip()
                           
-                          # 构造 sing-box 规则对象
+                          # 只保留 domain 和 ip 相关的规则
                           if 'domain' in r_type:
                               rules.append({r_type: r_val})
                           elif 'ip' in r_type:
                               rules.append({r_type: r_val})
                               
               except Exception as e:
-                  print(f'Error reading {list_file}: {e}')
+                  print(f'❌ Read Error: {e}')
+                  has_error = True
                   continue
 
               if not rules:
-                  print(f'Skipping {filename}: No rules found.')
+                  print(f'⚠️ Skipping {filename}: No valid rules found.')
                   continue
 
-              # --- 关键点：合并同类项生成 JSON ---
-              # 为了简化，我们直接生成 standard json structure
+              # 合并规则生成 JSON
               final_rule = {}
               for r in rules:
                   for k, v in r.items():
@@ -89,31 +94,43 @@ jobs:
               
               json_data = {'version': 1, 'rules': [final_rule]}
               
-              # 1. 保存 JSON (给 my_proxy 用)
+              # 保存 JSON
               json_path = f'rule_json/{filename}.json'
               with open(json_path, 'w', encoding='utf-8') as jf:
                   json.dump(json_data, jf, indent=2)
-              print(f'✅ Generated JSON: {json_path}')
+              print(f'✅ JSON Generated: {json_path}')
 
-              # 2. 编译 SRS (给 bm7_proxy 用)
+              # 编译 SRS
               srs_path = f'rule_srs/{filename}.srs'
               try:
-                  subprocess.run(['./sing-box', 'rule-set', 'compile', json_path, '-o', srs_path], check=True)
-                  print(f'✅ Compiled SRS: {srs_path}')
-              except subprocess.CalledProcessError:
-                  print(f'❌ Failed to compile {filename}')
-                  exit(1)
+                  # ✅ 关键修改：捕获详细报错信息 (stderr)
+                  result = subprocess.run(
+                      ['./sing-box', 'rule-set', 'compile', json_path, '-o', srs_path],
+                      check=True, capture_output=True, text=True
+                  )
+                  print(f'✅ SRS Compiled: {srs_path}')
+              except subprocess.CalledProcessError as e:
+                  print(f'❌ Compilation Failed for {filename}!')
+                  print(f'👉 Error Message: {e.stderr}') # 打印具体原因
+                  has_error = True
+
+          if has_error:
+              print('❌ Some files failed to process. Check logs above.')
+              # 哪怕有错，也尽量提交成功的那些文件，方便你调试
+          else:
+              print('🎉 All files processed successfully.')
           "
 
-      # 3. 提交结果回仓库
       - name: Commit and Push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # 强制添加这两个文件夹，不管有没有 .gitignore
-          git add -f rule_json/*.json 
-          git add -f rule_srs/*.srs
+          git add rule_json/ rule_srs/ || true
           
-          # 只有当有变化时才 commit，防止报错
-          git diff-index --quiet HEAD || git commit -m "Auto update rules: JSON + SRS"
-          git push origin HEAD:main
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto update rules [skip ci]"
+            git push
+            echo "🎉 Pushed changes to GitHub."
+          fi

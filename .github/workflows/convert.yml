@@ -1,119 +1,60 @@
-name: Convert Rules
+name: Update convert Rules
+
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *" # 每天运行一次
   push:
     paths:
-      - 'src/**.list'
-  workflow_dispatch:
+      - 'rule_json/**' # 当 json 修改时触发
 
 jobs:
-  convert:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout codebase
+        uses: actions/checkout@v3
 
-      # 1. 下载 Sing-box (保持不变，这个很稳)
-      - name: Download Sing-box Binary
-        run: |
-          VERSION="1.10.1"
-          echo "Downloading sing-box v$VERSION..."
-          wget https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box-${VERSION}-linux-amd64.tar.gz
-          tar -xvf sing-box-${VERSION}-linux-amd64.tar.gz
-          mv sing-box-${VERSION}-linux-amd64/sing-box .
-          chmod +x sing-box
-          ./sing-box version
-
-      # 2. 使用 Python 转换 (核心修改：用 Python 生成 JSON，绝对零错误)
-      - name: Convert List to JSON and SRS
-        uses: actions/setup-python@v5
+      - name: Setup Go
+        uses: actions/setup-go@v4
         with:
-          python-version: '3.10'
+          go-version: '1.21'
+
+      - name: Install Sing-box
+        run: |
+          echo "Installing Sing-box..."
+          go install -v -tags with_quic,with_dhcp,with_wireguard,with_shadowsocksr,with_ech,with_utls,with_reality_server,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@latest
+          sing-box version
+
+      - name: Compile SRS
+        run: |
+          mkdir -p rule_srs
           
-      - name: Run Python Conversion Script
+          # 遍历 rule_json 下的所有 .json 文件
+          for file in rule_json/*.json; do
+            filename=$(basename "$file" .json)
+            echo "--------------------------------------"
+            echo "正在编译: $filename"
+            
+            # 编译命令：json -> srs
+            # 如果编译失败，脚本会立即停止，不会提交坏文件
+            sing-box rule-set compile "$file" -o "rule_srs/$filename.srs" || exit 1
+            
+            # 打印生成的文件大小，方便检查
+            filesize=$(ls -lh "rule_srs/$filename.srs" | awk '{print $5}')
+            echo "✅ 编译成功: rule_srs/$filename.srs (大小: $filesize)"
+          done
+
+      - name: Commit and Push
         run: |
-          python -c "
-          import glob
-          import json
-          import os
-          import subprocess
-
-          # 创建文件夹
-          os.makedirs('rule_json', exist_ok=True)
-          os.makedirs('rule_srs', exist_ok=True)
-
-          # 遍历 src 目录下的所有 .list 文件
-          for list_file in glob.glob('src/*.list'):
-              filename = os.path.basename(list_file).replace('.list', '')
-              print(f'Processing {filename}...')
-              
-              suffixes = []
-              keywords = []
-              ips = []
-              
-              # 读取文件内容
-              try:
-                  with open(list_file, 'r', encoding='utf-8') as f:
-                      for line in f:
-                          line = line.strip()
-                          if not line or line.startswith('#'):
-                              continue
-                          
-                          parts = line.split(',')
-                          if len(parts) < 2:
-                              continue
-                              
-                          rule_type = parts[0].upper()
-                          value = parts[1].strip()
-                          
-                          if rule_type == 'DOMAIN-SUFFIX':
-                              suffixes.append(value)
-                          elif rule_type == 'DOMAIN-KEYWORD':
-                              keywords.append(value)
-                          elif rule_type == 'IP-CIDR':
-                              ips.append(value)
-              except Exception as e:
-                  print(f'Error reading {list_file}: {e}')
-                  continue
-
-              # 构建 Sing-box 的 JSON 对象
-              rule_obj = {}
-              if suffixes: rule_obj['domain_suffix'] = suffixes
-              if keywords: rule_obj['domain_keyword'] = keywords
-              if ips: rule_obj['ip_cidr'] = ips
-              
-              # 如果该文件里没有任何有效规则，跳过
-              if not rule_obj:
-                  print(f'Skipping {filename}: No valid rules found.')
-                  continue
-
-              # 生成 JSON 数据结构
-              json_data = {'version': 1, 'rules': [rule_obj]}
-              
-              json_path = f'rule_json/{filename}.json'
-              srs_path = f'rule_srs/{filename}.srs'
-              
-              # 写入 JSON 文件 (Python 会自动处理逗号和格式，绝不出错)
-              with open(json_path, 'w', encoding='utf-8') as jf:
-                  json.dump(json_data, jf, indent=2)
-                  
-              print(f'Compiling {json_path} to {srs_path}...')
-              
-              # 调用 sing-box 编译
-              try:
-                  subprocess.run(['./sing-box', 'rule-set', 'compile', json_path, '-o', srs_path], check=True)
-                  print(f'Successfully compiled {filename}')
-              except subprocess.CalledProcessError:
-                  print(f'Failed to compile {filename}')
-                  exit(1)
-          "
-
-      - name: Commit and Push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add rule_json/*.json rule_srs/*.srs
-          git diff-index --quiet HEAD || git commit -m "Auto convert rules [skip ci]"
-          git push origin HEAD:main
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add rule_srs/*.srs
+          
+          # 只有当有变化时才提交
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Auto-update SRS rules [$(date)]"
+            git push
+          fi

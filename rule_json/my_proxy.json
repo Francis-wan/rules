@@ -2,6 +2,12 @@
   "version": 1,
   "rules": [
     {
+      "domain_keyword": [
+        "speedtest",
+        "ookla",
+        "github",
+        "openai"
+      ],
       "domain_suffix": [
         "speedtest.net",
         "speedtest.com",
@@ -12,6 +18,7 @@
         "speed.dler.io",
         "ip138.com",
         "whoer.net",
+        "baidu.com",
         "fengkongcloud.com",
         "xhscdn.com",
         "xhscdn.net",
@@ -83,11 +90,11 @@
         "v2ex.com",
         "linux.do"
       ],
-      "domain_keyword": [
-        "speedtest",
-        "ookla",
-        "github",
-        "openai"
+      "domain": [
+        "lf3-static.bytednsdoc.com",
+        "v5-dy-o-abtest.zjcdn.com",
+        "browser-intake-datadoghq.com",
+        "static.cloudflareinsights.com"
       ],
       "ip_cidr": [
         "24.199.123.28/32",

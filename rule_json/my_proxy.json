@@ -2,14 +2,8 @@
   "version": 1,
   "rules": [
     {
-      "domain_keyword": [
-        "stripchat.com",
-        "speedtest",
-        "ookla",
-        "github",
-        "openai"
-      ],
       "domain_suffix": [
+        "stripchat.com",
         "speedtest.net",
         "speedtest.com",
         "ooklaserver.net",
@@ -89,6 +83,12 @@
         "turn.livekit.cloud",
         "v2ex.com",
         "linux.do"
+      ],
+      "domain_keyword": [
+        "speedtest",
+        "ookla",
+        "github",
+        "openai"
       ],
       "domain": [
         "lf3-static.bytednsdoc.com",

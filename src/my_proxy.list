@@ -7,10 +7,12 @@ DOMAIN-SUFFIX,doppiostreams.com
 DOMAIN-SUFFIX,google-analytics.com
 DOMAIN-SUFFIX,stripchat.xyz
 DOMAIN-SUFFIX,stripcdn.com
+DOMAIN-SUFFIX,websocket-sp-v6.stripchat.com
 #91
 DOMAIN-SUFFIX,cdn77.org
 DOMAIN-SUFFIX,91porn.com
 DOMAIN-SUFFIX,btc760.com
+DOMAIN-SUFFIX,91selfie.com
 #speedtest
 DOMAIN-KEYWORD,speedtest
 DOMAIN-KEYWORD,ookla

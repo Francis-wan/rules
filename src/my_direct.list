@@ -19,4 +19,4 @@ DOMAIN-SUFFIX,cnki.net
 DOMAIN-SUFFIX,cnki.com.cn
 DOMAIN-SUFFIX,cnki.com
 #Lib
-ip_cidr,60.210.241.0/24
+IP-CIDR,60.210.241.0/24

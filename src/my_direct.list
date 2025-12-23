@@ -14,5 +14,9 @@ IP-CIDR,192.168.0.0/16
 DOMAIN-SUFFIX,apple.com.cn
 DOMAIN-SUFFIX,microsoft.com
 # 如果你发现 windows 更新走了代理，可以在这里加 windowsupdate.com
-# 5. 补充：其他你想强制直连的网站
-# DOMAIN-SUFFIX, example-cn.com
+# CNKI
+DOMAIN-SUFFIX,cnki.net
+DOMAIN-SUFFIX,cnki.com.cn
+DOMAIN-SUFFIX,cnki.com
+#Lib
+ip_cidr,60.210.241.0/24

@@ -6,7 +6,10 @@
         "v.229719.xyz",
         "vercel.app",
         "apple.com.cn",
-        "microsoft.com"
+        "microsoft.com",
+        "cnki.net",
+        "cnki.com.cn",
+        "cnki.com"
       ],
       "ip_cidr": [
         "192.168.0.0/16"

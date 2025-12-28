@@ -2,6 +2,13 @@
   "version": 1,
   "rules": [
     {
+      "domain_keyword": [
+        "z-lib",
+        "speedtest",
+        "ookla",
+        "github",
+        "openai"
+      ],
       "domain_suffix": [
         "oversea.cnki.net",
         "stripchat.com",
@@ -96,12 +103,6 @@
         "turn.livekit.cloud",
         "v2ex.com",
         "linux.do"
-      ],
-      "domain_keyword": [
-        "speedtest",
-        "ookla",
-        "github",
-        "openai"
       ],
       "domain": [
         "lf3-static.bytednsdoc.com",

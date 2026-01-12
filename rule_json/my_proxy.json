@@ -2,6 +2,15 @@
   "version": 1,
   "rules": [
     {
+      "domain_keyword": [
+        "tw",
+        "kr",
+        "z-lib",
+        "speedtest",
+        "ookla",
+        "github",
+        "openai"
+      ],
       "domain_suffix": [
         "itkc.or.kr",
         "hao4k.cn",
@@ -98,13 +107,6 @@
         "turn.livekit.cloud",
         "v2ex.com",
         "linux.do"
-      ],
-      "domain_keyword": [
-        "z-lib",
-        "speedtest",
-        "ookla",
-        "github",
-        "openai"
       ],
       "domain": [
         "lf3-static.bytednsdoc.com",

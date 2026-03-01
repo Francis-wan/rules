@@ -9,7 +9,8 @@
         "microsoft.com",
         "cnki.net",
         "cnki.com.cn",
-        "cnki.com"
+        "cnki.com",
+        "openos.org"
       ],
       "ip_cidr": [
         "192.168.0.0/16",

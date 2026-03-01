@@ -20,3 +20,5 @@ DOMAIN-SUFFIX,cnki.com.cn
 DOMAIN-SUFFIX,cnki.com
 #Lib
 IP-CIDR,60.210.241.0/24
+#openos
+DOMAIN-SUFFIX,openos.org

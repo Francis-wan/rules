@@ -3,8 +3,6 @@
   "rules": [
     {
       "domain_suffix": [
-        "synology.com",
-        "direct.quickconnect.to",
         "meta.com",
         "itkc.or.kr",
         "coupang.com",

@@ -22,3 +22,5 @@ DOMAIN-SUFFIX,cnki.com
 IP-CIDR,60.210.241.0/24
 #openos
 DOMAIN-SUFFIX,openos.org
+#Oray
+IP-CIDR,172.16.0.0/16

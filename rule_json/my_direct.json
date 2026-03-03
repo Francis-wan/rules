@@ -10,7 +10,10 @@
         "cnki.net",
         "cnki.com.cn",
         "cnki.com",
-        "openos.org"
+        "openos.org",
+        "oray.com",
+        "oray.net",
+        "pgy.oray.com"
       ],
       "ip_cidr": [
         "192.168.0.0/16",

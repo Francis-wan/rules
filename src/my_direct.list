@@ -24,3 +24,6 @@ IP-CIDR,60.210.241.0/24
 DOMAIN-SUFFIX,openos.org
 #Oray
 IP-CIDR,172.16.0.0/16
+DOMAIN-SUFFIX,oray.com
+DOMAIN-SUFFIX,oray.net
+DOMAIN-SUFFIX,pgy.oray.com

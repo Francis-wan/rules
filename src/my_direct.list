@@ -28,7 +28,7 @@ DOMAIN-SUFFIX,oray.com
 DOMAIN-SUFFIX,oray.net
 DOMAIN-SUFFIX,pgy.oray.com
 #TJNU/EDU
-#DOMAIN-SUFFIX,tjnu.edu.cn
-DOMAIN-SUFFIX,edu.cn
-GEOSITE,CN
+DOMAIN-SUFFIX,tjnu.edu.cn
+DOMAIN-SUFFIX,*.edu.cn
+GEOIP,CN
 

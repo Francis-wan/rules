@@ -14,7 +14,8 @@
         "oray.com",
         "oray.net",
         "pgy.oray.com",
-        "edu.cn"
+        "tjnu.edu.cn",
+        "*.edu.cn"
       ],
       "ip_cidr": [
         "192.168.0.0/16",

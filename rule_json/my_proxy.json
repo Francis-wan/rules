@@ -3,6 +3,8 @@
   "rules": [
     {
       "domain_suffix": [
+        "claude.ai",
+        "anthropic.com",
         "meta.com",
         "itkc.or.kr",
         "coupang.com",
@@ -102,6 +104,13 @@
         "v2ex.com",
         "linux.do"
       ],
+      "domain": [
+        "cdn.usefathom.com",
+        "lf3-static.bytednsdoc.com",
+        "v5-dy-o-abtest.zjcdn.com",
+        "browser-intake-datadoghq.com",
+        "static.cloudflareinsights.com"
+      ],
       "domain_keyword": [
         "tw",
         "kr",
@@ -111,12 +120,6 @@
         "ookla",
         "github",
         "openai"
-      ],
-      "domain": [
-        "lf3-static.bytednsdoc.com",
-        "v5-dy-o-abtest.zjcdn.com",
-        "browser-intake-datadoghq.com",
-        "static.cloudflareinsights.com"
       ],
       "ip_cidr": [
         "24.199.123.28/32",

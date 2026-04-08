@@ -31,4 +31,6 @@ DOMAIN-SUFFIX,pgy.oray.com
 DOMAIN-SUFFIX,tjnu.edu.cn
 DOMAIN-SUFFIX,*.edu.cn
 GEOIP,CN
+#bili
+DOMAIN-SUFFIX,bilibili.com
 

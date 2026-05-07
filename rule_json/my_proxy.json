@@ -82,8 +82,11 @@
         "algolia.net",
         "api.statsig.com",
         "auth0.com",
+        "oaistatic.com",
+        "oaiusercontent.com",
         "cdn.cloudflare.net",
         "challenges.cloudflare.com",
+        "chatgpt.com",
         "chatgpt.livekit.cloud",
         "client-api.arkoselabs.com",
         "events.statsigapi.net",
@@ -109,7 +112,9 @@
         "lf3-static.bytednsdoc.com",
         "v5-dy-o-abtest.zjcdn.com",
         "browser-intake-datadoghq.com",
-        "static.cloudflareinsights.com"
+        "static.cloudflareinsights.com",
+        "auth.openai.com",
+        "ab.chatgpt.com"
       ],
       "domain_keyword": [
         "tw",
@@ -119,7 +124,8 @@
         "speedtest",
         "ookla",
         "github",
-        "openai"
+        "openai",
+        "chatgpt"
       ],
       "ip_cidr": [
         "24.199.123.28/32",

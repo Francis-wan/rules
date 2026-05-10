@@ -29,7 +29,7 @@ DOMAIN-SUFFIX,oray.net
 DOMAIN-SUFFIX,pgy.oray.com
 #TJNU/EDU
 DOMAIN-SUFFIX,tjnu.edu.cn
-DOMAIN-SUFFIX,*.edu.cn
+DOMAIN-SUFFIX,edu.cn
 GEOIP,CN
 #bili
 DOMAIN,0gr4uqmtt8y41hcjsgrzdrc31.ourdvsss.com

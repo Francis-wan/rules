@@ -6,7 +6,9 @@
         "claude.ai",
         "anthropic.com",
         "meta.com",
+        "tw",
         "itkc.or.kr",
+        "kr",
         "coupang.com",
         "hao4k.cn",
         "cz4k.com",
@@ -96,8 +98,6 @@
         "intercom.io",
         "intercomcdn.com",
         "launchdarkly.com",
-        "oaistatic.com",
-        "oaiusercontent.com",
         "observeit.net",
         "poe.com",
         "segment.io",
@@ -117,8 +117,6 @@
         "ab.chatgpt.com"
       ],
       "domain_keyword": [
-        "tw",
-        "kr",
         "z-lib",
         "annas-archive.org",
         "speedtest",

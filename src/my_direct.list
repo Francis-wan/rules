@@ -7,6 +7,22 @@
 DOMAIN-SUFFIX,v.229719.xyz
 # 2. 基础设施 (防止订阅更新失败)
 DOMAIN-SUFFIX,vercel.app
+
+# 微信公众号/腾讯内容强制直连，避免文章页和图片 CDN 被代理出口拦截
+DOMAIN-SUFFIX,mp.weixin.qq.com
+DOMAIN-SUFFIX,weixin.qq.com
+DOMAIN-SUFFIX,wx.qq.com
+DOMAIN-SUFFIX,res.wx.qq.com
+DOMAIN-SUFFIX,qq.com
+DOMAIN-SUFFIX,qpic.cn
+DOMAIN-SUFFIX,qlogo.cn
+DOMAIN-SUFFIX,gtimg.com
+DOMAIN-SUFFIX,wechat.com
+DOMAIN-SUFFIX,weixin.com
+DOMAIN-SUFFIX,servicewechat.com
+DOMAIN-SUFFIX,tencent.com
+DOMAIN-SUFFIX,tencentyun.com
+
 # 3. 局域网网段 (包含内网、光猫、Docker等)
 # 写了 /16 就包含了 /24，所以 192.168.1.0 那行其实可以删掉，留着 0.0 即可
 IP-CIDR,192.168.0.0/16
@@ -30,7 +46,7 @@ DOMAIN-SUFFIX,pgy.oray.com
 #TJNU/EDU
 DOMAIN-SUFFIX,tjnu.edu.cn
 DOMAIN-SUFFIX,edu.cn
-GEOIP,CN
+# GEOIP,CN 不能放进 sing-box rule-set；如需 CN 兜底，请在主配置 route.rules 中配置 geoip/geosite。
 #bili
 DOMAIN,0gr4uqmtt8y41hcjsgrzdrc31.ourdvsss.com
 DOMAIN,0gr4uqmtt8y41hcjsgrzdrc3s.ourdvsss.com
@@ -147,10 +163,10 @@ DOMAIN-SUFFIX,smtcdns.net
 DOMAIN-SUFFIX,upos-hz-mirrorakam.akamaized.net
 DOMAIN-SUFFIX,uposdash-302-bilivideo.yfcdn.net
 DOMAIN-SUFFIX,yo9.com
-USER-AGENT,*bili*
-USER-AGENT,Bilibili*
-USER-AGENT,bili*
-USER-AGENT,bili-inter*
+# USER-AGENT,*bili*
+# USER-AGENT,Bilibili*
+# USER-AGENT,bili*
+# USER-AGENT,bili-inter*
 IP-CIDR,106.75.74.76/32,no-resolve
 IP-CIDR,111.206.25.147/32,no-resolve
 IP-CIDR,119.3.238.64/32,no-resolve

@@ -8,10 +8,10 @@ DOMAIN,cdn.usefathom.com
 #Meta
 DOMAIN-SUFFIX,meta.com
 #TW
-DOMAIN-KEYWORD,tw
+DOMAIN-SUFFIX,tw
 #KR
 DOMAIN-SUFFIX,itkc.or.kr
-DOMAIN-KEYWORD,kr
+DOMAIN-SUFFIX,kr
 DOMAIN-SUFFIX,coupang.com
 #Movie
 DOMAIN-SUFFIX,hao4k.cn
@@ -122,8 +122,6 @@ DOMAIN-SUFFIX,identrust.com
 DOMAIN-SUFFIX,intercom.io
 DOMAIN-SUFFIX,intercomcdn.com
 DOMAIN-SUFFIX,launchdarkly.com
-DOMAIN-SUFFIX,oaistatic.com
-DOMAIN-SUFFIX,oaiusercontent.com
 DOMAIN-SUFFIX,observeit.net
 DOMAIN-SUFFIX,poe.com
 DOMAIN-SUFFIX,segment.io

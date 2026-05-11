@@ -2,10 +2,17 @@ name: Convert Rules
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'src/**.list'
+      - 'scripts/**'
       - '.github/workflows/**'
   workflow_dispatch:
+
+concurrency:
+  group: convert-rules-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   convert:
@@ -17,130 +24,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 👇【修改点】废弃不稳定的 wget，改用 Go 编译安装，稳如老狗
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.24.x'
 
-      - name: Install Sing-box
-        run: |
-          echo "Installing Sing-box via Go..."
-          # 使用 Go 官方代理安装，速度快且稳定
-          go install -v -tags with_quic,with_dhcp,with_wireguard,with_shadowsocksr,with_ech,with_utls,with_reality_server,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@v1.11.4
-          
-          # 验证安装是否成功
-          $(go env GOPATH)/bin/sing-box version
-
-      - name: Run Conversion Script
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          
-      - name: Execute Python Script
+          python-version: '3.12'
+
+      - name: Install sing-box
         run: |
-          # 将 GOPATH/bin 加入 PATH，确保能找到 sing-box
-          export PATH=$(go env GOPATH)/bin:$PATH
-          
-          python -c "
-          import glob, json, os, subprocess, sys
+          echo "Installing sing-box via go install..."
+          go install -v -tags with_quic,with_dhcp,with_wireguard,with_shadowsocksr,with_ech,with_utls,with_reality_server,with_clash_api,with_gvisor github.com/sagernet/sing-box/cmd/sing-box@v1.11.4
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          "$(go env GOPATH)/bin/sing-box" version
 
-          os.makedirs('rule_json', exist_ok=True)
-          os.makedirs('rule_srs', exist_ok=True)
+      - name: Convert and compile rules
+        run: python scripts/convert_rules.py --sing-box "$(go env GOPATH)/bin/sing-box"
 
-          files = glob.glob('src/*.list')
-          if not files:
-              print('⚠️ Warning: No .list files found in src/ folder!')
-              sys.exit(0)
-
-          print(f'Found {len(files)} list files. Processing...')
-          
-          has_error = False
-
-          for list_file in files:
-              filename = os.path.basename(list_file).replace('.list', '')
-              print(f'--------------------------------------')
-              print(f'Processing {filename}...')
-              
-              rules = []
-              try:
-                  # 使用 utf-8-sig 去除 BOM 头
-                  with open(list_file, 'r', encoding='utf-8-sig') as f:
-                      for line in f:
-                          line = line.strip()
-                          if not line or line.startswith('#'): continue
-                          parts = line.split(',')
-                          if len(parts) < 2: continue
-                          
-                          r_type = parts[0].upper().strip()
-                          r_val = parts[1].strip()
-                          
-                          # --- 核心修复：手动映射类型，防止出现 ip_cidr6 ---
-                          if r_type == 'DOMAIN-SUFFIX':
-                              rules.append({'domain_suffix': r_val})
-                          elif r_type == 'DOMAIN-KEYWORD':
-                              rules.append({'domain_keyword': r_val})
-                          elif r_type == 'DOMAIN':
-                              rules.append({'domain': r_val})
-                          elif r_type == 'IP-CIDR' or r_type == 'IP-CIDR6':
-                              # IPv6 也要放进 ip_cidr 字段里
-                              rules.append({'ip_cidr': r_val})
-                          elif r_type == 'IP-ASN':
-                              rules.append({'ip_asn': r_val})
-                              
-              except Exception as e:
-                  print(f'❌ Read Error: {e}')
-                  has_error = True
-                  continue
-
-              if not rules:
-                  print(f'⚠️ Skipping {filename}: No valid rules found.')
-                  continue
-
-              final_rule = {}
-              for r in rules:
-                  for k, v in r.items():
-                      if k not in final_rule: final_rule[k] = []
-                      final_rule[k].append(v)
-              
-              json_data = {'version': 1, 'rules': [final_rule]}
-              
-              # 保存 JSON
-              json_path = f'rule_json/{filename}.json'
-              with open(json_path, 'w', encoding='utf-8') as jf:
-                  json.dump(json_data, jf, indent=2)
-              print(f'✅ JSON Generated: {json_path}')
-
-              # 编译 SRS
-              srs_path = f'rule_srs/{filename}.srs'
-              try:
-                  # 直接调用 sing-box (因为已加入 PATH)
-                  result = subprocess.run(
-                      ['sing-box', 'rule-set', 'compile', json_path, '-o', srs_path],
-                      check=True, capture_output=True, text=True
-                  )
-                  print(f'✅ SRS Compiled: {srs_path}')
-              except subprocess.CalledProcessError as e:
-                  print(f'❌ Compilation Failed for {filename}!')
-                  print(f'👉 Error Message: {e.stderr}')
-                  has_error = True
-
-          if has_error:
-              print('❌ Some files failed to process.')
-              sys.exit(1)
-          else:
-              print('🎉 All files processed successfully.')
-          "
-
-      - name: Commit and Push changes
+      - name: Commit and push generated files
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add rule_json/ rule_srs/ || true
-          
+          git add rule_json/ rule_srs/
+
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Auto update rules [skip ci]"
-            git push
+            git push origin HEAD:${{ github.ref_name }}
           fi

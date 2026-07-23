@@ -37,6 +37,7 @@ DNS_SAFE_KEYS = {
     "domain_keyword",
     "domain_regex",
 }
+# Derive DNS-safe companions from the same maintained source list.
 DNS_DERIVED_RULE_SETS = {
     "my_direct": "my_direct_dns",
 }

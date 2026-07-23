@@ -31,6 +31,15 @@ SUPPORTED_TYPES = {
 # confirming every consuming sing-box client supports newer rule-set versions.
 RULE_SET_VERSION = 1
 DOMAIN_RE = re.compile(r"^[A-Za-z0-9_*.-]+$")
+DNS_SAFE_KEYS = {
+    "domain",
+    "domain_suffix",
+    "domain_keyword",
+    "domain_regex",
+}
+DNS_DERIVED_RULE_SETS = {
+    "my_direct": "my_direct_dns",
+}
 
 
 def fail(message: str) -> None:
@@ -122,6 +131,27 @@ def compile_srs(sing_box: str, json_path: Path, srs_path: Path) -> None:
     )
 
 
+def write_rule_set(
+    name: str,
+    rule: dict[str, list[str]],
+    json_dir: Path,
+    srs_dir: Path,
+    sing_box: str,
+    skip_compile: bool,
+) -> None:
+    json_path = json_dir / f"{name}.json"
+    srs_path = srs_dir / f"{name}.srs"
+
+    with json_path.open("w", encoding="utf-8") as handle:
+        json.dump({"version": RULE_SET_VERSION, "rules": [rule]}, handle, indent=2)
+        handle.write("\n")
+    print(f"✅ JSON generated: {json_path}")
+
+    if not skip_compile:
+        compile_srs(sing_box, json_path, srs_path)
+        print(f"✅ SRS compiled: {srs_path}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Convert src/*.list to sing-box JSON/SRS rule sets")
     parser.add_argument("--src-dir", type=Path, default=Path("src"))
@@ -147,17 +177,32 @@ def main(argv: list[str] | None = None) -> int:
         name = list_file.stem
         print(f"Processing {list_file}...")
         final_rule = convert_list_file(list_file)
-        json_path = args.json_dir / f"{name}.json"
-        srs_path = args.srs_dir / f"{name}.srs"
+        write_rule_set(
+            name,
+            final_rule,
+            args.json_dir,
+            args.srs_dir,
+            args.sing_box,
+            args.skip_compile,
+        )
 
-        with json_path.open("w", encoding="utf-8") as handle:
-            json.dump({"version": RULE_SET_VERSION, "rules": [final_rule]}, handle, indent=2)
-            handle.write("\n")
-        print(f"✅ JSON generated: {json_path}")
-
-        if not args.skip_compile:
-            compile_srs(args.sing_box, json_path, srs_path)
-            print(f"✅ SRS compiled: {srs_path}")
+        derived_name = DNS_DERIVED_RULE_SETS.get(name)
+        if derived_name:
+            dns_rule = {
+                key: values
+                for key, values in final_rule.items()
+                if key in DNS_SAFE_KEYS
+            }
+            if not dns_rule:
+                fail(f"{list_file}: no DNS-safe domain rules generated")
+            write_rule_set(
+                derived_name,
+                dns_rule,
+                args.json_dir,
+                args.srs_dir,
+                args.sing_box,
+                args.skip_compile,
+            )
 
     print("🎉 All rule sets processed successfully.")
     return 0

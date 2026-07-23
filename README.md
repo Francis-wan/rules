@@ -9,6 +9,15 @@ Personal sing-box rule-set sources and generated artifacts.
 - `rule_srs/*.srs`: generated binary sing-box rule sets.
 - `scripts/convert_rules.py`: strict converter and validator used by CI.
 
+`src/my_direct.list` is the single maintenance source for custom direct rules.
+The converter also derives a DNS-safe, domain-only companion rule set:
+
+- `rule_json/my_direct_dns.json`
+- `rule_srs/my_direct_dns.srs`
+
+Use `my_direct` for route matching and `my_direct_dns` for DNS server selection.
+This keeps IP/CIDR entries out of DNS rules without duplicating domain lists.
+
 ## Supported source rule types
 
 The converter supports only rule types that can be represented in a sing-box headless rule set:
@@ -53,6 +62,7 @@ WeChat public-account article domains are pinned in `src/my_direct.list` so arti
 - `servicewechat.com`
 - `tencent.com`
 
-Current Gist configs consume the custom rules as source JSON rule sets, for example `rule_json/my_direct.json` and `rule_json/my_proxy.json`. The generated `.srs` files are still available for configs that prefer binary rule sets.
+Current Gist configs consume the generated custom rule sets. The binary `.srs`
+files are intended for remote rule-set loading.
 
 Make sure the `my_direct` rule set is placed before broad proxy/final rules in the consuming sing-box config.

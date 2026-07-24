@@ -21,6 +21,11 @@ DOMAIN-KEYWORD,z-lib
 DOMAIN-KEYWORD,annas-archive.org
 #CNKI
 DOMAIN-SUFFIX,oversea.cnki.net
+#Baidu
+DOMAIN-SUFFIX,baidu.com
+DOMAIN-SUFFIX,bdstatic.com
+DOMAIN-SUFFIX,bdimg.com
+DOMAIN-SUFFIX,bcebos.com
 #stripchat
 DOMAIN-SUFFIX,stripchat.com
 DOMAIN-SUFFIX,doppiocdn.live

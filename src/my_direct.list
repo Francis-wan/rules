@@ -29,6 +29,7 @@ IP-CIDR,192.168.0.0/16
 # 4. 必须直连的国内/大流量服务
 DOMAIN-SUFFIX,apple.com.cn
 DOMAIN-SUFFIX,microsoft.com
+DOMAIN-SUFFIX,humanum.arts.cuhk.edu.hk
 # 如果你发现 windows 更新走了代理，可以在这里加 windowsupdate.com
 # CNKI
 DOMAIN-SUFFIX,cnki.net
